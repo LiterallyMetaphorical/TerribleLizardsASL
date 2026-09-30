@@ -29,6 +29,7 @@
 		{ "Debug", false, "Debug", null },
 			{ "Level",                      false, "Level",                 "Debug" },
 			{ "Loading",                    false, "Loading",               "Debug" },
+			{ "BetweenDemos",               false, "Between demos",         "Debug" },
 			{ "Objective",                  false, "Objective",             "Debug" },
 			{ "Cutscene",                   false, "Cutscene",              "Debug" },
 			{ "EndVideo",                   false, "Gameplay end video",    "Debug" },
@@ -82,8 +83,7 @@
 		vars.Resolver.Watch<int>("Objective", vars.Utils.GEngine, 0x10A8, 0x2D4);
 		vars.Resolver.Watch<int>("GameStateTags", vars.Utils.GEngine, 0x10A8, 0x4F0);
 
-		// GI.currently playing cutscene(268) -> LevelSequencePlayer.Sequence(290) -> name(18), None when no cutscene plays.
-		// The Story Demo ends with SQ_DemoEnd_2025.
+		// GI.currently playing cutscene(268) -> LevelSequencePlayer.Sequence(290) -> name(18), "None" when no cutscene is playing.
 		vars.Resolver.Watch<ulong>("CutsceneFName", vars.Utils.GEngine, 0x10A8, 0x268, 0x290, 0x18);
 		vars.Resolver["CutsceneFName"].FailAction = MemoryWatcher.ReadFailAction.SetZeroOrNull;
 		// Gameplay Demo end video (EndDemoSizzle.mp4), created on the frame the chase ends: WD_UI_DEMO_SizzleReelPlayer_C
@@ -99,6 +99,7 @@
 
 		current.Level = "";
 		current.Cutscene = "";
+		current.BetweenDemos = false;
 	}
 
 	update
@@ -113,11 +114,16 @@
 		number = (uint)(current.CutsceneFName >> 32);
 		current.Cutscene = number == 0 ? cutscene : cutscene + "_" + (number - 1);
 
+		// Full demo run: pause timer from the Story end split until the next loading screen (Continue into the Gameplay Demo) ends
+		if (old.Cutscene != current.Cutscene && current.Cutscene == "SQ_DemoEnd_2025") current.BetweenDemos = true;
+		else if (old.GameStateTags > 0 && current.GameStateTags == 0) current.BetweenDemos = false;
+
 		#region Debug Prints
 		if (settings["Debug"])
 		{
 			if (old.Level != current.Level)                         { vars.SetTextIfEnabled("Level", current.Level);                                        print("Level? " + current.Level); }
 			if (old.GameStateTags != current.GameStateTags)         { vars.SetTextIfEnabled("Loading", current.GameStateTags > 0);                          print("Loading? " + (current.GameStateTags > 0).ToString()); }
+			if (old.BetweenDemos != current.BetweenDemos)           { vars.SetTextIfEnabled("BetweenDemos", current.BetweenDemos);                          print("BetweenDemos? " + current.BetweenDemos.ToString()); }
 			if (old.Objective != current.Objective)                 { vars.SetTextIfEnabled("Objective", current.Objective);                                print("Objective? " + current.Objective); }
 			if (old.Cutscene != current.Cutscene)                   { vars.SetTextIfEnabled("Cutscene", current.Cutscene);                                  print("Cutscene? " + current.Cutscene); }
 			if (old.EndVideo != current.EndVideo)                   { vars.SetTextIfEnabled("EndVideo", current.EndVideo.ToString("X"));                    print("EndVideo? " + current.EndVideo.ToString("X")); }
@@ -134,12 +140,14 @@
 
 	start
 	{
-		return old.Level == "lvl_MainMenu" && current.Level != "lvl_MainMenu";
+		// Gameplay Demo: PLAY leaves the main menu. Story Demo: control after the intro cutscene, when SQ_Chp1_CINE_Intro_FirstHalf stops.
+		return old.Level == "lvl_MainMenu" && current.Level == "Lvl2_DemoMAIN_2026"
+			|| old.Cutscene == "SQ_Chp1_CINE_Intro_FirstHalf" && current.Cutscene != "SQ_Chp1_CINE_Intro_FirstHalf";
 	}
 
 	isLoading
 	{
-		return current.GameStateTags > 0;
+		return current.GameStateTags > 0 || current.BetweenDemos;
 	}
 
 	split
