@@ -12,10 +12,10 @@
 		{
 		{ "Splits", true, "Splits", null },
 			{ "Levels", true, "Levels", "Splits" },
-				{ "lvl_Act2Part2",          true,  "The Attraction",                    "Levels" },
-				{ "lvl_Act3Part3",          true,  "The Digsite",                       "Levels" },
-				{ "lvl_Act4Part4",          true,  "The Fall",                          "Levels" },
-				{ "SQ_lvl4_GoodEnding",     true,  "The Lair",                          "Levels" },
+				{ "SQ_Chp2_CINE_BrontoOpening_POV", true,  "The Attraction",            "Levels" },
+				{ "lvl_Act3Part3",                  true,  "The Digsite",               "Levels" },
+				{ "lvl_Act4Part4",                  true,  "The Fall",                  "Levels" },
+				{ "SQ_lvl4_GoodEnding",             true,  "The Lair",                  "Levels" },
 		{ "Debug", false, "Debug", null },
 			{ "Level",                      false, "Level",                 "Debug" },
 			{ "Loading",                    false, "Loading",               "Debug" },
@@ -143,7 +143,7 @@
 	{
 		string key = null;
 		if (old.Objective != current.Objective) key = current.Level + "_" + current.Objective;
-		if (old.Cutscene != current.Cutscene && current.Cutscene == "SQ_lvl4_GoodEnding") key = current.Cutscene;
+		if (old.Cutscene != current.Cutscene && (current.Cutscene == "SQ_Chp2_CINE_BrontoOpening_POV" || current.Cutscene == "SQ_lvl4_GoodEnding")) key = current.Cutscene;
 		if (old.Level != current.Level) key = current.Level;
 
 		if (key == null) return false;
