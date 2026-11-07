@@ -15,13 +15,14 @@
 				{ "SQ_Chp2_CINE_BrontoOpening_POV", true,  "The Attraction",            "Levels" },
 				{ "lvl_Act3Part3",                  true,  "The Digsite",               "Levels" },
 				{ "lvl_Act4Part4",                  true,  "The Fall",                  "Levels" },
-				{ "SQ_lvl4_GoodEnding",             true,  "The Lair",                  "Levels" },
+				{ "BP_CreditsRoller",               true,  "The Lair",                  "Levels" },
 		{ "Debug", false, "Debug", null },
 			{ "Level",                      false, "Level",                 "Debug" },
 			{ "Loading",                    false, "Loading",               "Debug" },
 			{ "Tags",                       false, "Game state tags",       "Debug" },
 			{ "Objective",                  false, "Objective",             "Debug" },
 			{ "Cutscene",                   false, "Cutscene",              "Debug" },
+			{ "BlockPause",                 false, "Block Pause",           "Debug" },
 		};
 		vars.Uhara.Settings.Create(_settings);
 		#endregion
@@ -76,6 +77,9 @@
 		vars.Resolver.Watch<ulong>("CutsceneFName", vars.Utils.GEngine, 0x10A8, 0x268, 0x290, 0x18);
 		vars.Resolver["CutsceneFName"].FailAction = MemoryWatcher.ReadFailAction.SetZeroOrNull;
 
+		// GameInstance.LocalPlayers(38)[0] -> PlayerController(30) -> Pawn(2D0) -> BP_CHARACTER_C.Block Pause?(C9A), turns on in the frame the ending cuts to black.
+		vars.Resolver.Watch<byte>("BlockPause", vars.Utils.GEngine, 0x10A8, 0x38, 0x0, 0x30, 0x2D0, 0xC9A);
+
 		#region Text Component
 		vars.SetTextIfEnabled = (Action<string, object>)((text1, text2) =>
 		{
@@ -117,6 +121,7 @@
 			if (old.TagNames != current.TagNames)                   { vars.SetTextIfEnabled("Tags", current.TagNames);                                      print("Tags? " + current.TagNames); }
 			if (old.Objective != current.Objective)                 { vars.SetTextIfEnabled("Objective", current.Objective);                                print("Objective? " + current.Objective); }
 			if (old.Cutscene != current.Cutscene)                   { vars.SetTextIfEnabled("Cutscene", current.Cutscene);                                  print("Cutscene? " + current.Cutscene); }
+			if (old.BlockPause != current.BlockPause)               { vars.SetTextIfEnabled("BlockPause", current.BlockPause);                              print("BlockPause? " + current.BlockPause); }
 		}
 		#endregion
 	}
@@ -145,6 +150,7 @@
 		if (old.Objective != current.Objective) key = current.Level + "_" + current.Objective;
 		if (old.Cutscene != current.Cutscene && (current.Cutscene == "SQ_Chp2_CINE_BrontoOpening_POV" || current.Cutscene == "SQ_lvl4_GoodEnding")) key = current.Cutscene;
 		if (old.Level != current.Level) key = current.Level;
+		if (old.BlockPause == 0 && current.BlockPause == 1 && current.Cutscene == "None" && vars.CompletedSplits.Contains("SQ_lvl4_GoodEnding")) key = "BP_CreditsRoller";
 
 		if (key == null) return false;
 		print("Split? " + key);
